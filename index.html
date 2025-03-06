@@ -8,20 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.1/cytoscape.min.js"></script>
     <style>
         body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            min-height: 100vh;
-            overflow-y: auto;
-        }
-        #scatterplot-container {
-            width: 800px;
-            height: 650px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            font-family: Arial, sans-serif;
+            margin: 20px;
         }
         #scatterplot {
             width: 800px;
@@ -34,19 +22,13 @@
             height: 600px;
             border: 1px solid black;
             margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             background-color: white;
-            position: relative;
         }
     </style>
 </head>
 <body>
     <h1>Interactive PCA Scatter Plot</h1>
-    <div id="scatterplot-container">
-        <svg id="scatterplot"></svg>
-    </div>
+    <svg id="scatterplot"></svg>
     <h2>Graph Structure</h2>
     <div id="graph-container"></div>
     
@@ -84,7 +66,11 @@
                 .attr("fill", "blue")
                 .style("cursor", "pointer")
                 .on("click", function(event, d) {
-                    drawGraph(d.graph_structure);
+                    let graphStructure = d.graph_structure;
+                    if (typeof graphStructure === "string") {
+                        graphStructure = JSON.parse(graphStructure); // Convert from string if necessary
+                    }
+                    drawGraph(graphStructure);
                 });
         }
 
@@ -109,7 +95,7 @@
                 elements: elements,
                 style: [{ selector: 'node', style: { 'background-color': 'blue', 'label': 'data(id)' } },
                         { selector: 'edge', style: { 'line-color': 'gray', 'width': 2 } }],
-                layout: { name: 'cose', nodeRepulsion: 20000 } // Increase node repulsion to separate dense graphs
+                layout: { name: 'cose', nodeRepulsion: 25000 } // Increase node repulsion to separate dense graphs
             });
         }
 
