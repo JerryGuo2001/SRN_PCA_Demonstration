@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive PCA Scatter Plot</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.1/cytoscape.min.js"></script>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+        #scatterplot-container {
+            width: 800px;
+            height: 650px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #scatterplot {
+            width: 800px;
+            height: 600px;
+            border: 1px solid black;
+            background-color: white;
+        }
+        #graph-container {
+            width: 800px;
+            height: 600px;
+            border: 1px solid black;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <h1>Interactive PCA Scatter Plot</h1>
+    <div id="scatterplot-container">
+        <svg id="scatterplot"></svg>
+    </div>
+    <h2>Graph Structure</h2>
+    <div id="graph-container"></div>
+    
+    <script>
+        async function loadJSON() {
+            const response = await fetch('graph_metrics_graphid_PCA.json'); // Load JSON file
+            const data = await response.json();
+            return data;
+        }
+
+        function drawScatterPlot(data) {
+            const width = 800, height = 600;
+            const svg = d3.select("#scatterplot")
+                          .attr("width", width)
+                          .attr("height", height);
+
+            const xScale = d3.scaleLinear().domain(d3.extent(data, d => d.PC1)).range([50, width - 50]);
+            const yScale = d3.scaleLinear().domain(d3.extent(data, d => d.PC2)).range([height - 50, 50]);
+
+            // Add X and Y axes
+            svg.append("g")
+                .attr("transform", `translate(0, ${height - 50})`)
+                .call(d3.axisBottom(xScale));
+
+            svg.append("g")
+                .attr("transform", `translate(50, 0)`)
+                .call(d3.axisLeft(yScale));
+
+            svg.selectAll("circle")
+                .data(data)
+                .enter().append("circle")
+                .attr("cx", d => xScale(d.PC1))
+                .attr("cy", d => yScale(d.PC2))
+                .attr("r", 6)
+                .attr("fill", "blue")
+                .style("cursor", "pointer")
+                .on("click", function(event, d) {
+                    drawGraph(d.graph_structure);
+                });
+        }
+
+        function drawGraph(graphStructure) {
+            const elements = [];
+            const size = Math.sqrt(graphStructure.length);
+            
+            for (let i = 0; i < size; i++) {
+                elements.push({ data: { id: `n${i}` } });
+            }
+            
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (graphStructure[i * size + j] === 1) {
+                        elements.push({ data: { source: `n${i}`, target: `n${j}` } });
+                    }
+                }
+            }
+            
+            cytoscape({
+                container: document.getElementById('graph-container'),
+                elements: elements,
+                style: [{ selector: 'node', style: { 'background-color': 'blue', 'label': 'data(id)' } },
+                        { selector: 'edge', style: { 'line-color': 'gray', 'width': 2 } }],
+                layout: { name: 'cose', nodeRepulsion: 20000 } // Increase node repulsion to separate dense graphs
+            });
+        }
+
+        loadJSON().then(data => drawScatterPlot(data));
+    </script>
+</body>
+</html>
