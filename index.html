@@ -10,6 +10,15 @@
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
         }
         #scatterplot {
             width: 800px;
@@ -24,13 +33,27 @@
             margin-top: 20px;
             background-color: white;
         }
+        #info-container {
+            width: 300px;
+            padding: 10px;
+            border: 1px solid black;
+            background-color: #f9f9f9;
+        }
     </style>
 </head>
 <body>
     <h1>Interactive PCA Scatter Plot</h1>
-    <svg id="scatterplot"></svg>
-    <h2>Graph Structure</h2>
-    <div id="graph-container"></div>
+    <div class="container">
+        <div>
+            <svg id="scatterplot"></svg>
+            <h2>Graph Structure</h2>
+            <div id="graph-container"></div>
+        </div>
+        <div id="info-container">
+            <h2>Graph Info</h2>
+            <div id="info"></div>
+        </div>
+    </div>
     
     <script>
         async function loadJSON() {
@@ -71,6 +94,7 @@
                         graphStructure = JSON.parse(graphStructure); // Convert from string if necessary
                     }
                     drawGraph(graphStructure);
+                    displayGraphInfo(d);
                 });
         }
 
@@ -96,6 +120,19 @@
                 style: [{ selector: 'node', style: { 'background-color': 'blue', 'label': 'data(id)' } },
                         { selector: 'edge', style: { 'line-color': 'gray', 'width': 2 } }],
                 layout: { name: 'cose', nodeRepulsion: 25000 } // Increase node repulsion to separate dense graphs
+            });
+        }
+
+        function displayGraphInfo(data) {
+            let infoContainer = document.getElementById("info");
+            infoContainer.innerHTML = "";
+            
+            Object.entries(data).forEach(([key, value]) => {
+                if (key !== "graph_structure" && key !== "graph_id") {
+                    let p = document.createElement("p");
+                    p.textContent = `${key}: ${value}`;
+                    infoContainer.appendChild(p);
+                }
             });
         }
 
