@@ -56,122 +56,116 @@
     </div>
     
     <script>
-async function loadJSON() {
-    const response = await fetch('/graph_metrics_graphid_PCA.json'); // Load JSON file
-    const data = await response.json();
+        async function loadJSON() {
+            const response = await fetch('data/graph_metrics_graphid_PCA.json'); // Adjust path if needed
+            const data = await response.json();
+            return data;
+        }
 
-    // Log the data for debugging
-    console.log("Raw JSON data:", data);
+        function drawScatterPlot(data) {
+            const width = 800, height = 600;
+            const svg = d3.select("#scatterplot")
+                          .attr("width", width)
+                          .attr("height", height);
 
-    // Ensure each entry in data has the correct structure
-    data.forEach(d => {
-        if (typeof d.graph_structure === "string") {
-            try {
-                d.graph_structure = JSON.parse(d.graph_structure);  // Convert string to array if necessary
-            } catch (e) {
-                console.error("Error parsing graph_structure:", e);
+            const xScale = d3.scaleLinear().domain(d3.extent(data, d => d.PC1)).range([50, width - 50]);
+            const yScale = d3.scaleLinear().domain(d3.extent(data, d => d.PC2)).range([height - 50, 50]);
+
+            // Add X and Y axes
+            svg.append("g")
+                .attr("transform", `translate(0, ${height - 50})`)
+                .call(d3.axisBottom(xScale));
+
+            svg.append("g")
+                .attr("transform", `translate(50, 0)`)
+                .call(d3.axisLeft(yScale));
+
+            svg.selectAll("circle")
+                .data(data)
+                .enter().append("circle")
+                .attr("cx", d => xScale(d.PC1))
+                .attr("cy", d => yScale(d.PC2))
+                .attr("r", 6)
+                .attr("fill", "blue")
+                .style("cursor", "pointer")
+                .on("click", function(event, d) {
+                    let graphStructure = d.graph_structure;
+                    if (typeof graphStructure === "string") {
+                        graphStructure = JSON.parse(graphStructure); // Convert from string if necessary
+                    }
+                    drawGraph(graphStructure, d.node_count);  // Pass node_count to adjust graph size
+                    displayGraphInfo(d);
+                });
+        }
+
+        function drawGraph(graphStructure, nodeCount) {
+            const elements = [];
+            const size = nodeCount; // Use the node_count from the data
+
+            console.log(`Drawing graph with ${size} nodes`);
+
+            // Create nodes
+            for (let i = 0; i < size; i++) {
+                elements.push({ data: { id: `n${i}` } });
             }
-        }
-    });
 
-    return data;
-}
+            console.log(`Nodes created: ${elements.length}`);
 
-function drawScatterPlot(data) {
-    const width = 800, height = 600;
-    const svg = d3.select("#scatterplot")
-                  .attr("width", width)
-                  .attr("height", height);
-
-    const xScale = d3.scaleLinear().domain(d3.extent(data, d => d.PC1)).range([50, width - 50]);
-    const yScale = d3.scaleLinear().domain(d3.extent(data, d => d.PC2)).range([height - 50, 50]);
-
-    // Add X and Y axes
-    svg.append("g")
-        .attr("transform", `translate(0, ${height - 50})`)
-        .call(d3.axisBottom(xScale));
-
-    svg.append("g")
-        .attr("transform", `translate(50, 0)`)
-        .call(d3.axisLeft(yScale));
-
-    svg.selectAll("circle")
-        .data(data)
-        .enter().append("circle")
-        .attr("cx", d => xScale(d.PC1))
-        .attr("cy", d => yScale(d.PC2))
-        .attr("r", 6)
-        .attr("fill", "blue")
-        .style("cursor", "pointer")
-        .on("click", function(event, d) {
-            let graphStructure = d.graph_structure;
-            drawGraph(graphStructure, d.node_count);  // Pass node_count to adjust graph size
-            displayGraphInfo(d);
-        });
-}
-
-function drawGraph(graphStructure, nodeCount) {
-    const elements = [];
-    const size = nodeCount; // Use the node_count from the data
-
-    // Create nodes
-    for (let i = 0; i < size; i++) {
-        elements.push({ data: { id: `n${i}` } });
-    }
-
-    // Create edges
-    for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-            if (graphStructure[i * size + j] === 1) {
-                elements.push({ data: { source: `n${i}`, target: `n${j}` } });
+            // Create edges
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (graphStructure[i * size + j] === 1) {
+                        elements.push({ data: { source: `n${i}`, target: `n${j}` } });
+                    }
+                }
             }
+
+            console.log(`Edges created: ${elements.length - size}`); // excluding nodes count
+
+            const cy = cytoscape({
+                container: document.getElementById('graph-container'),
+                elements: elements,
+                style: [
+                    { selector: 'node', style: { 
+                        'background-color': 'blue', 
+                        'label': 'data(id)', 
+                        'width': 30, // Set a fixed width
+                        'height': 30 // Set a fixed height
+                    }},
+                    { selector: 'edge', style: { 
+                        'line-color': 'gray', 
+                        'width': 2 
+                    }},
+                ],
+                layout: { 
+                    name: 'cose', 
+                    nodeRepulsion: 25000,  // Increase node repulsion to separate dense graphs
+                    fit: true,  // Adjust the graph to fit the container
+                    padding: 20  // Add padding around the graph for better visibility
+                }
+            });
+
+            // Fix the camera (zoom and position)
+            cy.fit(cy.nodes(), 50);  // Fit the graph to the view, with padding
+            cy.zoomingEnabled(false);  // Disable zooming
+            cy.panningEnabled(false);  // Disable panning
         }
-    }
 
-    const cy = cytoscape({
-        container: document.getElementById('graph-container'),
-        elements: elements,
-        style: [
-            { selector: 'node', style: { 
-                'background-color': 'blue', 
-                'label': 'data(id)', 
-                'width': 30, // Set a fixed width
-                'height': 30 // Set a fixed height
-            }},
-            { selector: 'edge', style: { 
-                'line-color': 'gray', 
-                'width': 2 
-            }},
-        ],
-        layout: { 
-            name: 'cose', 
-            nodeRepulsion: 25000,  // Increase node repulsion to separate dense graphs
-            fit: true,  // Adjust the graph to fit the container
-            padding: 20  // Add padding around the graph for better visibility
+
+        function displayGraphInfo(data) {
+            let infoContainer = document.getElementById("info");
+            infoContainer.innerHTML = "";
+            
+            Object.entries(data).forEach(([key, value]) => {
+                if (key !== "graph_structure" && key !== "graph_id") {
+                    let p = document.createElement("p");
+                    p.textContent = `${key}: ${value}`;
+                    infoContainer.appendChild(p);
+                }
+            });
         }
-    });
 
-    // Fix the camera (zoom and position)
-    cy.fit(cy.nodes(), 50);  // Fit the graph to the view, with padding
-    cy.zoomingEnabled(false);  // Disable zooming
-    cy.panningEnabled(false);  // Disable panning
-}
-
-function displayGraphInfo(data) {
-    let infoContainer = document.getElementById("info");
-    infoContainer.innerHTML = "";
-    
-    Object.entries(data).forEach(([key, value]) => {
-        if (key !== "graph_structure" && key !== "graph_id") {
-            let p = document.createElement("p");
-            p.textContent = `${key}: ${value}`;
-            infoContainer.appendChild(p);
-        }
-    });
-}
-
-loadJSON().then(data => drawScatterPlot(data));
-
+        loadJSON().then(data => drawScatterPlot(data));
     </script>
 </body>
 </html>
