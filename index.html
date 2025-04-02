@@ -101,13 +101,11 @@
         function drawGraph(graphStructure) {
             const elements = [];
             const size = Math.sqrt(graphStructure.length);
-
-            // Create nodes
+            
             for (let i = 0; i < size; i++) {
                 elements.push({ data: { id: `n${i}` } });
             }
-
-            // Create edges
+            
             for (let i = 0; i < size; i++) {
                 for (let j = 0; j < size; j++) {
                     if (graphStructure[i * size + j] === 1) {
@@ -115,36 +113,15 @@
                     }
                 }
             }
-
-            const cy = cytoscape({
+            
+            cytoscape({
                 container: document.getElementById('graph-container'),
                 elements: elements,
-                style: [
-                    { selector: 'node', style: { 
-                        'background-color': 'blue', 
-                        'label': 'data(id)', 
-                        'width': 30, // Set a fixed width
-                        'height': 30 // Set a fixed height
-                    }},
-                    { selector: 'edge', style: { 
-                        'line-color': 'gray', 
-                        'width': 2 
-                    }},
-                ],
-                layout: { 
-                    name: 'cose', 
-                    nodeRepulsion: 25000,  // Increase node repulsion to separate dense graphs
-                    fit: false,  // Prevent the graph from adjusting to the container
-                    padding: 20  // Add padding around the graph for better visibility
-                }
+                style: [{ selector: 'node', style: { 'background-color': 'blue', 'label': 'data(id)' } },
+                        { selector: 'edge', style: { 'line-color': 'gray', 'width': 2 } }],
+                layout: { name: 'cose', nodeRepulsion: 25000 } // Increase node repulsion to separate dense graphs
             });
-
-            // Fix the camera (zoom and position)
-            cy.fit(cy.nodes(), 50);  // Fit the graph to the view, with padding
-            cy.zoomingEnabled(false);  // Disable zooming
-            cy.panningEnabled(false);  // Disable panning
         }
-
 
         function displayGraphInfo(data) {
             let infoContainer = document.getElementById("info");
