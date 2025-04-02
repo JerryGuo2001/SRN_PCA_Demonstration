@@ -57,7 +57,7 @@
     
     <script>
         async function loadJSON() {
-            const response = await fetch('graph_metrics_graphid_PCA.json'); // Load JSON file
+            const response = await fetch('data/graph_metrics_graphid_PCA.json'); // Adjust path if needed
             const data = await response.json();
             return data;
         }
@@ -93,57 +93,63 @@
                     if (typeof graphStructure === "string") {
                         graphStructure = JSON.parse(graphStructure); // Convert from string if necessary
                     }
-                    drawGraph(graphStructure);
+                    drawGraph(graphStructure, d.node_count);  // Pass node_count to adjust graph size
                     displayGraphInfo(d);
                 });
         }
 
-        function drawGraph(graphStructure) {
-        const elements = [];
-        const size = Math.sqrt(graphStructure.length);
+        function drawGraph(graphStructure, nodeCount) {
+            const elements = [];
+            const size = nodeCount; // Use the node_count from the data
 
-        // Create nodes
-        for (let i = 0; i < size; i++) {
-            elements.push({ data: { id: `n${i}` } });
-        }
+            console.log(`Drawing graph with ${size} nodes`);
 
-        // Create edges
-        for (let i = 0; i < size; i++) {
-            for (let j = 0; j < size; j++) {
-                if (graphStructure[i * size + j] === 1) {
-                    elements.push({ data: { source: `n${i}`, target: `n${j}` } });
+            // Create nodes
+            for (let i = 0; i < size; i++) {
+                elements.push({ data: { id: `n${i}` } });
+            }
+
+            console.log(`Nodes created: ${elements.length}`);
+
+            // Create edges
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    if (graphStructure[i * size + j] === 1) {
+                        elements.push({ data: { source: `n${i}`, target: `n${j}` } });
+                    }
                 }
             }
+
+            console.log(`Edges created: ${elements.length - size}`); // excluding nodes count
+
+            const cy = cytoscape({
+                container: document.getElementById('graph-container'),
+                elements: elements,
+                style: [
+                    { selector: 'node', style: { 
+                        'background-color': 'blue', 
+                        'label': 'data(id)', 
+                        'width': 30, // Set a fixed width
+                        'height': 30 // Set a fixed height
+                    }},
+                    { selector: 'edge', style: { 
+                        'line-color': 'gray', 
+                        'width': 2 
+                    }},
+                ],
+                layout: { 
+                    name: 'cose', 
+                    nodeRepulsion: 25000,  // Increase node repulsion to separate dense graphs
+                    fit: true,  // Adjust the graph to fit the container
+                    padding: 20  // Add padding around the graph for better visibility
+                }
+            });
+
+            // Fix the camera (zoom and position)
+            cy.fit(cy.nodes(), 50);  // Fit the graph to the view, with padding
+            cy.zoomingEnabled(false);  // Disable zooming
+            cy.panningEnabled(false);  // Disable panning
         }
-
-        const cy = cytoscape({
-            container: document.getElementById('graph-container'),
-            elements: elements,
-            style: [
-                { selector: 'node', style: { 
-                    'background-color': 'blue', 
-                    'label': 'data(id)', 
-                    'width': 30, // Set a fixed width
-                    'height': 30 // Set a fixed height
-                }},
-                { selector: 'edge', style: { 
-                    'line-color': 'gray', 
-                    'width': 2 
-                }},
-            ],
-            layout: { 
-                name: 'cose', 
-                nodeRepulsion: 25000,  // Increase node repulsion to separate dense graphs
-                fit: false,  // Prevent the graph from adjusting to the container
-                padding: 20  // Add padding around the graph for better visibility
-            }
-        });
-
-        // Fix the camera (zoom and position)
-        cy.fit(cy.nodes(), 50);  // Fit the graph to the view, with padding
-        cy.zoomingEnabled(false);  // Disable zooming
-        cy.panningEnabled(false);  // Disable panning
-    }
 
 
         function displayGraphInfo(data) {
