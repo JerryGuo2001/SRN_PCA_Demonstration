@@ -71,9 +71,6 @@
             const xScale = d3.scaleLinear().domain(d3.extent(data, d => d.PC1)).range([50, width - 50]);
             const yScale = d3.scaleLinear().domain(d3.extent(data, d => d.PC2)).range([height - 50, 50]);
 
-            // Create a color scale for the node_count
-            const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-
             // Add X and Y axes
             svg.append("g")
                 .attr("transform", `translate(0, ${height - 50})`)
@@ -89,7 +86,7 @@
                 .attr("cx", d => xScale(d.PC1))
                 .attr("cy", d => yScale(d.PC2))
                 .attr("r", 6)
-                .attr("fill", d => colorScale(d.node_count))  // Use color scale for node_count
+                .attr("fill", "blue")
                 .style("cursor", "pointer")
                 .on("click", function(event, d) {
                     let graphStructure = d.graph_structure;
@@ -102,49 +99,52 @@
         }
 
         function drawGraph(graphStructure) {
-            const elements = [];
-            const size = Math.sqrt(graphStructure.length);
+        const elements = [];
+        const size = Math.sqrt(graphStructure.length);
 
-            // Create nodes
-            for (let i = 0; i < size; i++) {
-                elements.push({ data: { id: `n${i}` } });
-            }
-
-            // Create edges
-            for (let i = 0; i < size; i++) {
-                for (let j = 0; j < size; j++) {
-                    if (graphStructure[i * size + j] === 1) {
-                        elements.push({ data: { source: `n${i}`, target: `n${j}` } });
-                    }
-                }
-            }
-
-            const cy = cytoscape({
-                container: document.getElementById('graph-container'),
-                elements: elements,
-                style: [
-                    { selector: 'node', style: { 
-                        'background-color': 'blue', 
-                        'label': 'data(id)', 
-                        'width': 30, 
-                        'height': 30 
-                    }},
-                    { selector: 'edge', style: { 
-                        'line-color': 'gray', 
-                        'width': 2 
-                    }},
-                ],
-                layout: { 
-                    name: 'grid',  // Use grid layout to make it uniform
-                    rows: Math.sqrt(elements.length)  // Define rows for consistent size
-                }
-            });
-
-            // Adjust the camera view to fit the graph to the container
-            cy.fit(cy.nodes(), 50);  // Fit the graph with padding
-            cy.zoomingEnabled(false);  // Disable zooming
-            cy.panningEnabled(false);  // Disable panning
+        // Create nodes
+        for (let i = 0; i < size; i++) {
+            elements.push({ data: { id: `n${i}` } });
         }
+
+        // Create edges
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                if (graphStructure[i * size + j] === 1) {
+                    elements.push({ data: { source: `n${i}`, target: `n${j}` } });
+                }
+            }
+        }
+
+        const cy = cytoscape({
+            container: document.getElementById('graph-container'),
+            elements: elements,
+            style: [
+                { selector: 'node', style: { 
+                    'background-color': 'blue', 
+                    'label': 'data(id)', 
+                    'width': 30, // Set a fixed width
+                    'height': 30 // Set a fixed height
+                }},
+                { selector: 'edge', style: { 
+                    'line-color': 'gray', 
+                    'width': 2 
+                }},
+            ],
+            layout: { 
+                name: 'cose', 
+                nodeRepulsion: 25000,  // Increase node repulsion to separate dense graphs
+                fit: false,  // Prevent the graph from adjusting to the container
+                padding: 20  // Add padding around the graph for better visibility
+            }
+        });
+
+        // Fix the camera (zoom and position)
+        cy.fit(cy.nodes(), 50);  // Fit the graph to the view, with padding
+        cy.zoomingEnabled(false);  // Disable zooming
+        cy.panningEnabled(false);  // Disable panning
+    }
+
 
         function displayGraphInfo(data) {
             let infoContainer = document.getElementById("info");
