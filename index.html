@@ -93,7 +93,7 @@
         .enter().append("circle")
         .attr("cx", d => xScale(d["PC1"]))  // Use PC1 for the x-axis
         .attr("cy", d => yScale(d["PC2"]))  // Use PC2 for the y-axis
-        .attr("r", 6)
+        .attr("r", 2)
         .attr("fill", d => colorScale(d["node_count"]))  // Color based on node_count
         .style("cursor", "pointer")
         .on("click", function(event, d) {
